@@ -15,11 +15,12 @@
 
 // Standard-Makros (werden geladen wenn NVS leer)
 const char* DEFAULT_MACROS[MAX_MACROS] = {
-    // Button 1: Öffne Browser (einfacher Test)
-    "REM Button 1 Test\n"
+    // Button 1: ESP-Key Config Page öffnen (Windows + Linux KDE)
+    "REM Open ESP-Key Config\n"
     "GUI r\n"
-    "DELAY 300\n"
-    "STRING notepad\n"
+    "DELAY 400\n"
+    "STRING https://leei1337.github.io/esp-key/\n"
+    "DELAY 100\n"
     "ENTER\n",
 
     // Button 2: Copy (Ctrl+C)

@@ -2,6 +2,28 @@
 
 A programmable BLE macro keyboard based on ESP32-C3 Super Mini with NeoPixel effects and Ducky Script support.
 
+## Quick Start - Konfiguration
+
+### Online Config (empfohlen)
+
+**https://leei1337.github.io/esp-key/**
+
+1. ESP-Key per USB verbinden
+2. Link oben in Chrome/Edge öffnen
+3. "Verbinden" klicken → USB-Port wählen
+4. Makros und LEDs konfigurieren
+5. "Speichern" klicken - fertig!
+
+> **Tipp:** Button 1 öffnet automatisch diese Config-Seite!
+
+### Schnellzugriff per Button
+
+| OS | Button 1 Aktion |
+|----|-----------------|
+| Windows | Win+R → öffnet Config-Seite |
+| Linux (KDE) | Alt+F2 → öffnet Config-Seite |
+| Linux (GNOME) | Super → URL tippen → Enter |
+
 ## Features
 
 - **9 programmable macro buttons** with Ducky Script support
@@ -62,23 +84,11 @@ Hold **Button 1** and press another button:
 4. **Chase** - Running light
 5. **Sparkle** - Random flashes
 
-## Configuration
-
-### Web Serial (Chrome/Edge)
-
-1. Open `web/index.html` in Chrome or Edge
-2. Click **"Verbinden"** (Connect)
-3. Select the ESP-Key USB port
-4. Edit macros and LED settings
-5. Click **"Speichern"** (Save)
-
-> **Note:** Web Serial API requires Chrome 89+ or Edge 89+
-
-### Default Macros
+## Default Macros
 
 | Button | Default Action |
 |--------|----------------|
-| 1 | Open Notepad (Win+R → notepad) |
+| 1 | **Config-Seite öffnen** (Win+R → URL) |
 | 2 | Copy (Ctrl+C) |
 | 3 | Paste (Ctrl+V) |
 | 4 | Cut (Ctrl+X) |
@@ -185,6 +195,12 @@ For custom integrations, the ESP-Key accepts these commands via USB Serial (1152
 ### BLE not connecting
 - Remove device from PC Bluetooth settings
 - Re-pair the device
+
+### Button 1 öffnet Config nicht (Linux)
+Auf manchen Linux-Systemen funktioniert Win+R nicht. Alternativen:
+- **GNOME:** Super-Taste → URL eintippen → Enter
+- **KDE:** Alt+F2 → URL eintippen → Enter
+- Oder einfach den Link manuell öffnen: https://leei1337.github.io/esp-key/
 
 ### LEDs not working
 - Check NeoPixel data wire connection (GPIO 8)
