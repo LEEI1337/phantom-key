@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP-Key Configurator</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card: #16213e;
+            --accent: #0f3460;
+            --highlight: #e94560;
+            --text: #eee;
+            --text-muted: #888;
+            --success: #4caf50;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 1rem; color: var(--highlight); }
+        .status {
+            background: var(--card);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .status-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #f44;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        .status-dot.connected { background: var(--success); animation: none; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .btn {
+            background: var(--highlight);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: var(--accent); }
+        .btn-success { background: var(--success); }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .card h2 { font-size: 1.1rem; margin-bottom: 0.75rem; color: var(--highlight); }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tab {
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+        }
+        .tab.active { background: var(--highlight); }
+        .macro-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .macro-btn {
+            padding: 1rem;
+            background: var(--accent);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .macro-btn.active { border-color: var(--highlight); background: var(--highlight); }
+        .macro-btn.modified { border-color: orange; }
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 0.75rem;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+        .led-controls { display: grid; gap: 1rem; }
+        .led-row { display: flex; align-items: center; gap: 1rem; }
+        .led-row label { min-width: 80px; color: var(--text-muted); }
+        .led-row input[type="range"] {
+            flex: 1; height: 8px;
+            -webkit-appearance: none;
+            background: var(--accent);
+            border-radius: 4px;
+        }
+        .led-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px; height: 20px;
+            background: var(--highlight);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .led-row span { min-width: 40px; text-align: right; }
+        .effect-select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .toggle { position: relative; width: 60px; height: 30px; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--accent);
+            border-radius: 30px;
+            transition: 0.3s;
+        }
+        .toggle-slider:before {
+            content: "";
+            position: absolute;
+            height: 22px; width: 22px;
+            left: 4px; bottom: 4px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle input:checked + .toggle-slider { background: var(--highlight); }
+        .toggle input:checked + .toggle-slider:before { transform: translateX(30px); }
+        .color-preview {
+            width: 40px; height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--text);
+        }
+        .actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .actions .btn { flex: 1; }
+        .hidden { display: none; }
+        .toast {
+            position: fixed;
+            bottom: 2rem; left: 50%;
+            transform: translateX(-50%);
+            background: var(--card);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--highlight);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        .toast.show { opacity: 1; }
+        .toast.success { border-left-color: var(--success); }
+        .help { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+        .instructions {
+            background: var(--accent);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .instructions ol { margin-left: 1.5rem; }
+        .instructions li { margin: 0.5rem 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ESP-Key Configurator</h1>
+
+        <div class="status">
+            <div style="display: flex; align-items: center;">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Nicht verbunden</span>
+            </div>
+            <button class="btn" id="connectBtn" onclick="toggleConnection()">USB Verbinden</button>
+        </div>
+
+        <div id="notConnected">
+            <div class="instructions">
+                <h3>So geht's:</h3>
+                <ol>
+                    <li><strong>ESP-Key per USB</strong> an den PC anschließen</li>
+                    <li>Auf <strong>"USB Verbinden"</strong> klicken</li>
+                    <li>Im Popup den <strong>USB-Port</strong> auswählen (z.B. "USB Serial" oder "ttyACM0")</li>
+                    <li>Makros und LEDs konfigurieren</li>
+                    <li><strong>Speichern</strong> nicht vergessen!</li>
+                </ol>
+            </div>
+        </div>
+
+        <div id="connected" class="hidden">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('macros')">Makros</button>
+                <button class="tab" onclick="showTab('leds')">LEDs</button>
+                <button class="tab" onclick="showTab('help')">Hilfe</button>
+            </div>
+
+            <!-- Macros Tab -->
+            <div id="tab-macros" class="tab-content">
+                <div class="card">
+                    <h2>Makro-Tasten</h2>
+                    <div class="macro-buttons" id="macroButtons"></div>
+                    <textarea id="macroEditor" placeholder="Ducky Script eingeben..."></textarea>
+                    <p class="help">Befehle: STRING, DELAY, ENTER, CTRL, ALT, WIN/GUI, SHIFT, F1-F12</p>
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="loadMacro()">Neu laden</button>
+                        <button class="btn btn-success" onclick="saveMacro()">Speichern</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEDs Tab -->
+            <div id="tab-leds" class="tab-content hidden">
+                <div class="card">
+                    <h2>LED-Einstellungen</h2>
+                    <div class="led-controls">
+                        <div class="led-row">
+                            <label>An/Aus</label>
+                            <label class="toggle">
+                                <input type="checkbox" id="ledEnabled" checked onchange="updatePreview()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="led-row">
+                            <label>Farbe</label>
+                            <input type="range" id="ledHue" min="0" max="255" value="0" oninput="updatePreview()">
+                            <div class="color-preview" id="colorPreview"></div>
+                        </div>
+                        <div class="led-row">
+                            <label>Sättigung</label>
+                            <input type="range" id="ledSat" min="0" max="255" value="255" oninput="updatePreview()">
+                            <span id="satVal">255</span>
+                        </div>
+                        <div class="led-row">
+                            <label>Helligkeit</label>
+                            <input type="range" id="ledBri" min="0" max="255" value="50" oninput="updatePreview()">
+                            <span id="briVal">50</span>
+                        </div>
+                        <div class="led-row">
+                            <label>Effekt</label>
+                            <select class="effect-select" id="ledEffect">
+                                <option value="0">Solid</option>
+                                <option value="1">Breathing</option>
+                                <option value="2">Rainbow</option>
+                                <option value="3">Chase</option>
+                                <option value="4">Sparkle</option>
+                            </select>
+                        </div>
+                        <div class="led-row">
+                            <label>Speed</label>
+                            <input type="range" id="ledSpeed" min="0" max="255" value="50" oninput="updatePreview()">
+                            <span id="speedVal">50</span>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary" onclick="loadLeds()">Neu laden</button>
+                        <button class="btn btn-success" onclick="saveLeds()">Speichern</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Tab -->
+            <div id="tab-help" class="tab-content hidden">
+                <div class="card">
+                    <h2>Ducky Script Befehle</h2>
+                    <pre style="font-size: 0.85rem; color: var(--text-muted); white-space: pre-wrap;">
+STRING text     - Text tippen
+DELAY 500       - 500ms warten
+ENTER           - Enter-Taste
+TAB             - Tab-Taste
+ESCAPE          - Escape-Taste
+
+CTRL c          - Strg+C (Kopieren)
+CTRL v          - Strg+V (Einfügen)
+ALT TAB         - Alt+Tab
+WIN r           - Windows+R
+SHIFT a         - Shift+A
+
+F1 bis F12      - Funktionstasten
+UP/DOWN/LEFT/RIGHT - Pfeiltasten
+                    </pre>
+                </div>
+                <div class="card">
+                    <h2>Tasten-Kombinationen</h2>
+                    <pre style="font-size: 0.85rem; color: var(--text-muted);">
+1 + 2  = Farbe heller
+1 + 3  = Farbe dunkler
+1 + 4  = Helligkeit +
+1 + 5  = Helligkeit -
+1 + 6  = Effekt wechseln
+1 + 7  = An/Aus
+1 + 9 (3s) = Config Mode
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let currentMacro = 0;
+        let macros = ['','','','','','','','',''];
+        let responseCallback = null;
+
+        // Initialize macro buttons
+        function initMacroButtons() {
+            const container = document.getElementById('macroButtons');
+            container.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'macro-btn' + (i === currentMacro ? ' active' : '');
+                btn.textContent = i + 1;
+                btn.onclick = () => selectMacro(i);
+                container.appendChild(btn);
+            }
+        }
+
+        // Connect/Disconnect
+        async function toggleConnection() {
+            if (port) {
+                await disconnect();
+            } else {
+                await connect();
+            }
+        }
+
+        async function connect() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+
+                const textDecoder = new TextDecoderStream();
+                const textEncoder = new TextEncoderStream();
+
+                port.readable.pipeTo(textDecoder.writable);
+                textEncoder.readable.pipeTo(port.writable);
+
+                reader = textDecoder.readable.getReader();
+                writer = textEncoder.writable.getWriter();
+
+                setConnected(true);
+                startReading();
+
+                // Load initial data
+                setTimeout(async () => {
+                    await sendCommand('PING');
+                    await loadAllMacros();
+                    await loadLeds();
+                }, 500);
+
+            } catch (e) {
+                console.error('Connection error:', e);
+                showToast('Verbindung fehlgeschlagen: ' + e.message);
+            }
+        }
+
+        async function disconnect() {
+            try {
+                if (reader) { await reader.cancel(); reader = null; }
+                if (writer) { await writer.close(); writer = null; }
+                if (port) { await port.close(); port = null; }
+            } catch (e) {}
+            setConnected(false);
+        }
+
+        function setConnected(connected) {
+            document.getElementById('statusDot').classList.toggle('connected', connected);
+            document.getElementById('statusText').textContent = connected ? 'Verbunden' : 'Nicht verbunden';
+            document.getElementById('connectBtn').textContent = connected ? 'Trennen' : 'USB Verbinden';
+            document.getElementById('notConnected').classList.toggle('hidden', connected);
+            document.getElementById('connected').classList.toggle('hidden', !connected);
+            if (connected) initMacroButtons();
+        }
+
+        let readBuffer = '';
+        async function startReading() {
+            try {
+                while (port && reader) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    readBuffer += value;
+
+                    let lines = readBuffer.split('\n');
+                    readBuffer = lines.pop();
+
+                    for (const line of lines) {
+                        handleResponse(line.trim());
+                    }
+                }
+            } catch (e) {
+                if (port) console.error('Read error:', e);
+            }
+        }
+
+        function handleResponse(line) {
+            console.log('RX:', line);
+            if (responseCallback) {
+                responseCallback(line);
+                responseCallback = null;
+            }
+        }
+
+        async function sendCommand(cmd) {
+            if (!writer) return null;
+            console.log('TX:', cmd);
+
+            return new Promise((resolve) => {
+                responseCallback = resolve;
+                writer.write(cmd + '\n');
+                setTimeout(() => {
+                    if (responseCallback === resolve) {
+                        responseCallback = null;
+                        resolve(null);
+                    }
+                }, 2000);
+            });
+        }
+
+        // Macros
+        function selectMacro(idx) {
+            currentMacro = idx;
+            document.querySelectorAll('.macro-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === idx);
+            });
+            document.getElementById('macroEditor').value = macros[idx] || '';
+        }
+
+        async function loadAllMacros() {
+            for (let i = 0; i < 9; i++) {
+                const resp = await sendCommand('GET_MACRO:' + i);
+                if (resp) {
+                    try {
+                        const data = JSON.parse(resp);
+                        macros[i] = data.script || '';
+                    } catch (e) {}
+                }
+            }
+            selectMacro(currentMacro);
+            showToast('Makros geladen', true);
+        }
+
+        async function loadMacro() {
+            const resp = await sendCommand('GET_MACRO:' + currentMacro);
+            if (resp) {
+                try {
+                    const data = JSON.parse(resp);
+                    macros[currentMacro] = data.script || '';
+                    document.getElementById('macroEditor').value = macros[currentMacro];
+                    showToast('Makro ' + (currentMacro + 1) + ' geladen', true);
+                } catch (e) {}
+            }
+        }
+
+        async function saveMacro() {
+            const script = document.getElementById('macroEditor').value;
+            const escaped = script.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+            const resp = await sendCommand('SET_MACRO:' + currentMacro + ':' + escaped);
+            if (resp) {
+                try {
+                    const data = JSON.parse(resp);
+                    if (data.ok) {
+                        macros[currentMacro] = script;
+                        showToast('Makro ' + (currentMacro + 1) + ' gespeichert!', true);
+                    }
+                } catch (e) {}
+            }
+        }
+
+        // LEDs
+        async function loadLeds() {
+            const resp = await sendCommand('GET_LEDS');
+            if (resp) {
+                try {
+                    const data = JSON.parse(resp);
+                    document.getElementById('ledHue').value = data.hue;
+                    document.getElementById('ledSat').value = data.sat;
+                    document.getElementById('ledBri').value = data.bri;
+                    document.getElementById('ledEffect').value = data.effect;
+                    document.getElementById('ledSpeed').value = data.speed;
+                    document.getElementById('ledEnabled').checked = data.on;
+                    updatePreview();
+                    showToast('LED-Einstellungen geladen', true);
+                } catch (e) {}
+            }
+        }
+
+        async function saveLeds() {
+            const h = document.getElementById('ledHue').value;
+            const s = document.getElementById('ledSat').value;
+            const b = document.getElementById('ledBri').value;
+            const e = document.getElementById('ledEffect').value;
+            const sp = document.getElementById('ledSpeed').value;
+            const on = document.getElementById('ledEnabled').checked ? 1 : 0;
+
+            const resp = await sendCommand(`SET_LEDS:${h},${s},${b},${e},${sp},${on}`);
+            if (resp) {
+                try {
+                    const data = JSON.parse(resp);
+                    if (data.ok) showToast('LED-Einstellungen gespeichert!', true);
+                } catch (e) {}
+            }
+        }
+
+        function updatePreview() {
+            const h = document.getElementById('ledHue').value / 255;
+            const s = document.getElementById('ledSat').value / 255;
+            const v = document.getElementById('ledBri').value / 255;
+
+            document.getElementById('satVal').textContent = document.getElementById('ledSat').value;
+            document.getElementById('briVal').textContent = document.getElementById('ledBri').value;
+            document.getElementById('speedVal').textContent = document.getElementById('ledSpeed').value;
+
+            // HSV to RGB
+            let r, g, b;
+            const i = Math.floor(h * 6);
+            const f = h * 6 - i;
+            const p = v * (1 - s);
+            const q = v * (1 - f * s);
+            const t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0: r = v; g = t; b = p; break;
+                case 1: r = q; g = v; b = p; break;
+                case 2: r = p; g = v; b = t; break;
+                case 3: r = p; g = q; b = v; break;
+                case 4: r = t; g = p; b = v; break;
+                case 5: r = v; g = p; b = q; break;
+            }
+            document.getElementById('colorPreview').style.backgroundColor =
+                `rgb(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)})`;
+        }
+
+        // Tabs
+        function showTab(name) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.remove('hidden');
+            event.target.classList.add('active');
+        }
+
+        // Toast
+        function showToast(msg, success = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show' + (success ? ' success' : '');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Check Web Serial support
+        if (!navigator.serial) {
+            document.querySelector('.container').innerHTML = `
+                <div class="card" style="text-align: center; padding: 2rem;">
+                    <h2 style="color: var(--highlight);">Web Serial nicht unterstützt</h2>
+                    <p style="margin-top: 1rem; color: var(--text-muted);">
+                        Bitte verwende <strong>Chrome</strong> oder <strong>Edge</strong> Browser.
+                    </p>
+                    <p style="margin-top: 0.5rem; color: var(--text-muted);">
+                        Firefox und Safari unterstützen Web Serial leider nicht.
+                    </p>
+                </div>
+            `;
+        }
+
+        updatePreview();
+    </script>
+</body>
+</html>

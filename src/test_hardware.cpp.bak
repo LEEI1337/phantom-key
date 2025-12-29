@@ -1,0 +1,82 @@
+/*
+ * ESP-Key GPIO Scanner
+ * Scannt ALLE GPIOs um herauszufinden wo Buttons angeschlossen sind
+ */
+
+#include <Arduino.h>
+
+// Alle verfügbaren GPIOs auf ESP32-C3 Super Mini
+// GPIO 5, 6, 7 = USB (nicht nutzbar)
+// GPIO 4 = Poti (ADC)
+// GPIO 8 = oft onboard LED
+const uint8_t ALL_GPIOS[] = {0, 1, 2, 3, 8, 9, 10, 18, 19, 20, 21};
+const int NUM_GPIOS = 11;
+
+// Poti auf GPIO 4 (bestätigt!)
+const uint8_t POTI_PIN = 4;
+
+bool lastState[NUM_GPIOS] = {false};
+int lastPotiValue = 0;
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000);
+
+    Serial.println("\n========================================");
+    Serial.println("  ESP-Key GPIO SCANNER");
+    Serial.println("  ESP32-C3 Super Mini");
+    Serial.println("========================================\n");
+
+    // Setup alle GPIOs als Input mit Pull-Up
+    Serial.println("Scanne alle GPIOs...\n");
+    for (int i = 0; i < NUM_GPIOS; i++) {
+        pinMode(ALL_GPIOS[i], INPUT_PULLUP);
+    }
+
+    // Poti
+    analogReadResolution(12);
+    int potiVal = analogRead(POTI_PIN);
+    Serial.printf("Poti (GPIO 4): %d (%d%%)\n\n", potiVal, map(potiVal, 0, 4095, 0, 100));
+
+    // Initial Scan
+    Serial.println("=== GPIO STATUS ===");
+    for (int i = 0; i < NUM_GPIOS; i++) {
+        bool state = digitalRead(ALL_GPIOS[i]) == LOW;
+        lastState[i] = state;
+        Serial.printf("  GPIO %2d: %s\n", ALL_GPIOS[i], state ? "LOW (gedrueckt?)" : "HIGH (offen)");
+    }
+
+    Serial.println("\n========================================");
+    Serial.println("DRUECKE JETZT BUTTONS!");
+    Serial.println("Ich zeige welche GPIOs reagieren.");
+    Serial.println("========================================\n");
+}
+
+void loop() {
+    // Scan alle GPIOs
+    for (int i = 0; i < NUM_GPIOS; i++) {
+        bool currentState = (digitalRead(ALL_GPIOS[i]) == LOW);
+
+        if (currentState != lastState[i]) {
+            if (currentState) {
+                Serial.printf(">>> GPIO %d GEDRUECKT! <<<\n", ALL_GPIOS[i]);
+            } else {
+                Serial.printf("    GPIO %d losgelassen\n", ALL_GPIOS[i]);
+            }
+            lastState[i] = currentState;
+        }
+    }
+
+    // Poti check (weniger oft)
+    static unsigned long lastPotiCheck = 0;
+    if (millis() - lastPotiCheck > 200) {
+        lastPotiCheck = millis();
+        int potiValue = analogRead(POTI_PIN);
+        if (abs(potiValue - lastPotiValue) > 100) {
+            Serial.printf("POTI: %d (%d%%)\n", potiValue, map(potiValue, 0, 4095, 0, 100));
+            lastPotiValue = potiValue;
+        }
+    }
+
+    delay(10);
+}

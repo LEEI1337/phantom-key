@@ -1,0 +1,22 @@
+{
+    "name": "ESP32-BLE-Keyboard",
+    "version": "0.3.3-arduino3",
+    "description": "Bluetooth LE Keyboard library for ESP32-C3 (Arduino 3.x compatible)",
+    "keywords": "esp32, ble, bluetooth, keyboard, hid, nimble",
+    "authors": [
+        {
+            "name": "T-vK",
+            "url": "https://github.com/T-vK"
+        },
+        {
+            "name": "Arduino 3.x fixes by JuniorPolegato",
+            "url": "https://github.com/T-vK/ESP32-BLE-Keyboard/pull/372"
+        }
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/T-vK/ESP32-BLE-Keyboard.git"
+    },
+    "frameworks": "arduino",
+    "platforms": "espressif32"
+}
