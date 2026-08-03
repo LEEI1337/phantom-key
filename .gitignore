@@ -1,25 +1,80 @@
-# PlatformIO
-.pio/
-.pioenvs/
-.piolibdeps/
+```
+# Dependencies
+node_modules/
+**/node_modules/
 
-# Build
+# Build artifacts
+dist/
 build/
-*.o
-*.elf
-*.bin
-*.hex
+target/
+**/dist/
+**/build/
+**/target/
 
-# IDE
+# Python related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+**/__pycache__/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.ENV/
+
+# PlatformIO
+.piolibdeps/
+.platformio/
+**/.piolibdeps/
+**/.platformio/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+**/*.log
+
+# Environment files
+.env
+.env.local
+.env.*
+**/.env
+**/.env.local
+**/.env.*
+
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# OS
+# OS files
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+```
