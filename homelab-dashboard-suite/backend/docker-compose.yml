@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # Haupt Backend Aggregator
+  aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: homelab-aggregator
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-3000}:3000"
+      - "${WS_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DEBUG_MODE=${DEBUG_MODE:-false}
+      
+      # Proxmox
+      - PROXMOX_URL=${PROXMOX_URL:-https://pve.local:8006}
+      - PROXMOX_TOKEN=${PROXMOX_TOKEN}
+      - PROXMOX_SECRET=${PROXMOX_SECRET}
+      - PROXMOX_NODE=${PROXMOX_NODE:-pve}
+      
+      # Docker
+      - DOCKER_HOST=${DOCKER_HOST:-unix:///var/run/docker.sock}
+      
+      # OMV
+      - OMV_URL=${OMV_URL:-http://omv.local}
+      - OMV_USERNAME=${OMV_USERNAME}
+      - OMV_PASSWORD=${OMV_PASSWORD}
+      
+      # pfSense
+      - PFSENSE_URL=${PFSENSE_URL:-https://pfsense.local}
+      - PFSENSE_KEY=${PFSENSE_KEY}
+      - PFSENSE_SECRET=${PFSENSE_SECRET}
+      
+      # Home Assistant
+      - HA_URL=${HA_URL:-http://homeassistant.local:8123}
+      - HA_TOKEN=${HA_TOKEN}
+      
+      # GPU Monitoring (wenn Host GPU durchgereicht wird)
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      
+      # Storage
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - DB_PATH=/data/timeseries.db
+      
+      # MQTT
+      - MQTT_BROKER=${MQTT_BROKER:-mqtt://mosquitto:1883}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
+    volumes:
+      - ./config:/app/config
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - redis
+      - mosquitto
+    networks:
+      - homelab
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache für schnelle Daten
+  redis:
+    image: redis:7-alpine
+    container_name: homelab-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - homelab
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # MQTT Broker
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: homelab-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+    networks:
+      - homelab
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$SYS/#", "-C", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Prometheus für Metriken (optional, wenn nicht schon vorhanden)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: homelab-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=24h'
+      - '--web.enable-lifecycle'
+    networks:
+      - homelab
+    profiles:
+      - monitoring
+
+  # Node Exporter für Host-Metriken
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: homelab-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - homelab
+    profiles:
+      - monitoring
+
+networks:
+  homelab:
+    driver: bridge
+
+volumes:
+  redis_data:
+  mosquitto_data:
+  prometheus_data:

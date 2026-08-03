@@ -1,0 +1,58 @@
+{
+  "network": {
+    "ssid": "",
+    "password": "",
+    "mqtt_broker": "192.168.1.100",
+    "mqtt_port": 1883,
+    "mqtt_user": "",
+    "mqtt_password": "",
+    "websocket_url": "ws://192.168.1.100",
+    "websocket_port": 8765,
+    "use_static_ip": false,
+    "static_ip": "192.168.1.50",
+    "gateway": "192.168.1.1",
+    "subnet": "255.255.255.0",
+    "dns": "192.168.1.1"
+  },
+  "display": {
+    "brightness": 200,
+    "timeout_seconds": 300,
+    "auto_rotate": false,
+    "default_screen": 0,
+    "show_fps": false,
+    "theme": "dark"
+  },
+  "data": {
+    "refresh_interval_ms": 1000,
+    "history_size": 2880,
+    "log_to_sd": false,
+    "aggregation_interval": 60
+  },
+  "services": {
+    "proxmox_enabled": false,
+    "proxmox_url": "https://192.168.1.10:8006",
+    "proxmox_token": "",
+    "docker_enabled": true,
+    "docker_host": "192.168.1.100",
+    "docker_port": 2375,
+    "omv_enabled": false,
+    "omv_url": "http://192.168.1.100",
+    "pfsense_enabled": false,
+    "pfsense_url": "https://192.168.1.1",
+    "pfsense_user": "admin",
+    "pfsense_password": "",
+    "gpu_enabled": true,
+    "gpu_index": 0,
+    "homeassistant_enabled": true,
+    "ha_url": "http://192.168.1.100:8123",
+    "ha_token": ""
+  },
+  "poti": {
+    "pin": -1,
+    "mode": 1,
+    "smoothing_factor": 0.1,
+    "steps": 100,
+    "inverted": false,
+    "custom_action": ""
+  }
+}
