@@ -1,58 +1,52 @@
 ```
+# Git keep files
+!**/.gitkeep
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
 # Dependencies
 node_modules/
-**/node_modules/
-
-# Build artifacts
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
 dist/
 build/
 target/
-**/dist/
-**/build/
-**/target/
+.gradle/
 
-# Python related
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-**/__pycache__/
-
-# Virtual environments
-venv/
-.venv/
-env/
-.ENV/
-
-# PlatformIO
-.piolibdeps/
-.platformio/
-**/.piolibdeps/
-**/.platformio/
-
-# Temporary files
-*.tmp
-*.temp
-*.log
-**/*.log
-
-# Environment files
-.env
-.env.local
-.env.*
-**/.env
-**/.env.local
-**/.env.*
-
-# IDE files
+# Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS files
+# System files
 .DS_Store
 Thumbs.db
+
+# Compiled files
+*.pyc
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
 # Compressed files
 *.zip
