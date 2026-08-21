@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # Core Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hlds-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DB_HOST=timescaledb
+      - DB_PORT=5432
+      - DB_NAME=hlds
+      - DB_USER=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-hlds_secret_password}
+      - JWT_SECRET=${JWT_SECRET:-change_this_secret_now}
+      - PORT=3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./config:/app/config
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - hlds-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # WebUI (React)
+  webui:
+    build:
+      context: ./webui
+      dockerfile: Dockerfile
+    container_name: hlds-webui
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://localhost:3000/api
+      - REACT_APP_WS_URL=ws://localhost:3000/ws
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - hlds-network
+
+  # Redis Cache (Live Data)
+  redis:
+    image: redis:7-alpine
+    container_name: hlds-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - hlds-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # TimescaleDB (Historical Data)
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: hlds-timescaledb
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-hlds_secret_password}
+      - POSTGRES_DB=hlds
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - hlds-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d hlds"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MQTT Broker (Optional for ESP communication)
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: hlds-mqtt
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mqtt_data:/mosquitto/data
+    networks:
+      - hlds-network
+
+  # Sidecar: GPU Collector (Example)
+  gpu-collector:
+    build:
+      context: ./sidecars/gpu-collector
+      dockerfile: Dockerfile
+    container_name: hlds-gpu-collector
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - BACKEND_URL=http://backend:3000
+      - COLLECTOR_ID=gpu-nvml-01
+      - POLL_INTERVAL=5000
+    depends_on:
+      - backend
+    networks:
+      - hlds-network
+    profiles:
+      - gpu  # Only start with --profile gpu if you have NVIDIA GPUs
+
+networks:
+  hlds-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  timescaledb_data:
+  mqtt_data:
